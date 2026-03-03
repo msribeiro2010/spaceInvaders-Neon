@@ -49,7 +49,7 @@ body {
 
 .scoreboard {
   display: grid;
-  grid-template-columns: repeat(3, minmax(80px, 1fr));
+  grid-template-columns: repeat(4, minmax(68px, 1fr));
   gap: 12px;
   padding: 12px;
   background: linear-gradient(145deg, rgba(18, 22, 46, 0.9), rgba(8, 10, 24, 0.9));
@@ -152,6 +152,6 @@ canvas {
 
 @media (max-width: 520px) {
   .scoreboard {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
   }
 }
