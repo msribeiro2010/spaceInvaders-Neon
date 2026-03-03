@@ -1,0 +1,148 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+5 0 obj
+<< /Length 1808 >>
+stream
+BT
+/F1 20 Tf
+54 738 Td
+(Snake App Summary) Tj
+ET
+BT
+/F1 12 Tf
+54 710 Td
+(What It Is) Tj
+ET
+BT
+/F1 10 Tf
+54 692 Td
+(- A classic Snake game built as a single-page web app.) Tj
+ET
+BT
+/F1 10 Tf
+54 678 Td
+(- It uses a canvas board for play and simple UI controls.) Tj
+ET
+BT
+/F1 12 Tf
+54 662 Td
+(Who It's For) Tj
+ET
+BT
+/F1 10 Tf
+54 644 Td
+(- Casual players who want a quick Snake game on desktop or mobile.) Tj
+ET
+BT
+/F1 12 Tf
+54 628 Td
+(What It Does) Tj
+ET
+BT
+/F1 10 Tf
+54 610 Td
+(- Renders a 21x21 grid and the snake on an HTML canvas.) Tj
+ET
+BT
+/F1 10 Tf
+54 596 Td
+(- Advances on a 120 ms tick and updates the score.) Tj
+ET
+BT
+/F1 10 Tf
+54 582 Td
+(- Spawns food in empty cells; eating grows the snake \(+10\).) Tj
+ET
+BT
+/F1 10 Tf
+54 568 Td
+(- Ends the game on wall or self collision.) Tj
+ET
+BT
+/F1 10 Tf
+54 554 Td
+(- Supports keyboard controls \(arrows/WASD\).) Tj
+ET
+BT
+/F1 10 Tf
+54 540 Td
+(- Provides on-screen controls and a restart button.) Tj
+ET
+BT
+/F1 12 Tf
+54 524 Td
+(How It Works) Tj
+ET
+BT
+/F1 10 Tf
+54 506 Td
+(- index.html defines the canvas, score, status text, and controls.) Tj
+ET
+BT
+/F1 10 Tf
+54 492 Td
+(- styles.css sets layout, colors, and responsive behavior.) Tj
+ET
+BT
+/F1 10 Tf
+54 478 Td
+(- src/main.js handles input, the game loop, rendering, and UI updates.) Tj
+ET
+BT
+/F1 10 Tf
+54 464 Td
+(- src/game.mjs encapsulates game state, rules, and per-tick updates.) Tj
+ET
+BT
+/F1 10 Tf
+54 450 Td
+(- Data flow: input -> setDirection -> tick -> state -> draw/update UI.) Tj
+ET
+BT
+/F1 10 Tf
+54 436 Td
+(- Not found in repo: any backend service, API, or persistent storage.) Tj
+ET
+BT
+/F1 12 Tf
+54 420 Td
+(How to Run) Tj
+ET
+BT
+/F1 10 Tf
+54 402 Td
+(- Open index.html in a modern browser.) Tj
+ET
+BT
+/F1 10 Tf
+54 388 Td
+(- Not found in repo: documented install/build steps or a required local server.) Tj
+ET
+
+endstream
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000121 00000 n 
+0000000247 00000 n 
+0000000317 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+2177
+%%EOF

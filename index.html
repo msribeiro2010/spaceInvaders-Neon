@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Space Invaders Neon</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <div>
+        <h1>Space Invaders Neon</h1>
+        <p class="sub">Defenda a base com um visual neon e tiros brilhantes.</p>
+      </div>
+      <div class="scoreboard">
+        <div>
+          <span>Score</span>
+          <strong id="score">0</strong>
+        </div>
+        <div>
+          <span>Lives</span>
+          <strong id="lives">3</strong>
+        </div>
+        <div>
+          <span>Level</span>
+          <strong id="level">1</strong>
+        </div>
+      </div>
+    </header>
+
+    <section class="game-panel">
+      <canvas id="board" width="700" height="520" aria-label="Space Invaders" role="img"></canvas>
+      <div class="controls">
+        <button data-action="left" aria-label="Mover para a esquerda">LEFT</button>
+        <button data-action="shoot" aria-label="Atirar">FIRE</button>
+        <button data-action="right" aria-label="Mover para a direita">RIGHT</button>
+        <button id="restart" aria-label="Reiniciar">RESTART</button>
+      </div>
+    </section>
+
+    <section class="legend">
+      <p>Teclado: setas ou A/D para mover, ESPACO para atirar. Mobile: toque nos botoes. Reinicie com R.</p>
+      <p id="status" class="status">Pressione setas ou ESPACO para comecar.</p>
+    </section>
+  </main>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

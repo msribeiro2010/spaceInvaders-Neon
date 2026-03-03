@@ -1,0 +1,148 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+5 0 obj
+<< /Length 1873 >>
+stream
+BT
+/F1 20 Tf
+54 738 Td
+(Resumo do App Snake) Tj
+ET
+BT
+/F1 12 Tf
+54 710 Td
+(O Que E) Tj
+ET
+BT
+/F1 10 Tf
+54 692 Td
+(- Um jogo classico de Snake feito como um app web de pagina unica.) Tj
+ET
+BT
+/F1 10 Tf
+54 678 Td
+(- Usa um canvas para o tabuleiro e controles simples de UI.) Tj
+ET
+BT
+/F1 12 Tf
+54 662 Td
+(Para Quem E) Tj
+ET
+BT
+/F1 10 Tf
+54 644 Td
+(- Jogadores casuais que querem uma partida rapida no desktop ou no celular.) Tj
+ET
+BT
+/F1 12 Tf
+54 628 Td
+(O Que Faz) Tj
+ET
+BT
+/F1 10 Tf
+54 610 Td
+(- Renderiza uma grade 21x21 e a cobra em um canvas HTML.) Tj
+ET
+BT
+/F1 10 Tf
+54 596 Td
+(- Avanca em ticks de 120 ms e atualiza a pontuacao.) Tj
+ET
+BT
+/F1 10 Tf
+54 582 Td
+(- Gera comida em celulas vazias; comer aumenta a cobra \(+10\).) Tj
+ET
+BT
+/F1 10 Tf
+54 568 Td
+(- Encerra o jogo ao colidir com a parede ou com o proprio corpo.) Tj
+ET
+BT
+/F1 10 Tf
+54 554 Td
+(- Suporta controles por teclado \(setas/WASD\).) Tj
+ET
+BT
+/F1 10 Tf
+54 540 Td
+(- Oferece controles na tela e botao de reiniciar.) Tj
+ET
+BT
+/F1 12 Tf
+54 524 Td
+(Como Funciona) Tj
+ET
+BT
+/F1 10 Tf
+54 506 Td
+(- index.html define o canvas, score, texto de status e controles.) Tj
+ET
+BT
+/F1 10 Tf
+54 492 Td
+(- styles.css define layout, cores e comportamento responsivo.) Tj
+ET
+BT
+/F1 10 Tf
+54 478 Td
+(- src/main.js faz input, loop do jogo, renderizacao e atualizacoes de UI.) Tj
+ET
+BT
+/F1 10 Tf
+54 464 Td
+(- src/game.mjs encapsula estado, regras e atualizacoes por tick.) Tj
+ET
+BT
+/F1 10 Tf
+54 450 Td
+(- Fluxo: input -> setDirection -> tick -> state -> draw/atualiza UI.) Tj
+ET
+BT
+/F1 10 Tf
+54 436 Td
+(- Nao encontrado no repositorio: backend, API ou armazenamento persistente.) Tj
+ET
+BT
+/F1 12 Tf
+54 420 Td
+(Como Rodar) Tj
+ET
+BT
+/F1 10 Tf
+54 402 Td
+(- Abra index.html em um navegador moderno.) Tj
+ET
+BT
+/F1 10 Tf
+54 388 Td
+(- Nao encontrado no repositorio: passos de install/build ou necessidade de servidor local.) Tj
+ET
+
+endstream
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000121 00000 n 
+0000000247 00000 n 
+0000000317 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+2242
+%%EOF
