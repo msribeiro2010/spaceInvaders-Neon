@@ -22,6 +22,7 @@ const stars = createStars(130);
 const input = { left: false, right: false, shoot: false };
 
 let lastTime = 0;
+let animFrameId = null;
 
 function fitCanvas() {
   board.width = game.width;
@@ -32,22 +33,22 @@ function setStatus(text) { statusEl.textContent = text; }
 function resetStatus() { setStatus('Pressione setas ou ESPACO para comecar. Desvie dos asteroides!'); }
 
 function loop(timestamp) {
+  // Schedule FIRST — loop never dies even if game logic throws
+  animFrameId = requestAnimationFrame(loop);
+
   if (!lastTime) lastTime = timestamp;
   const dt = Math.min(0.033, (timestamp - lastTime) / 1000);
   lastTime = timestamp;
 
-  game.setInput(input);
-  const state = game.update(dt);
   try {
+    game.setInput(input);
+    const state = game.update(dt);
     draw(state, dt);
+    updateHud(state);
+    if (state.gameOver) setStatus('FIM DE JOGO! Aperte R ou RESTART.');
   } catch (err) {
-    console.error('Draw error:', err);
+    console.error('Game error:', err);
   }
-  updateHud(state);
-
-  if (state.gameOver) setStatus('FIM DE JOGO! Aperte R ou RESTART.');
-
-  requestAnimationFrame(loop);
 }
 
 function updateHud(state) {
@@ -546,10 +547,13 @@ function attachButtons() {
 
 function restart() {
   game.reset();
+  lastTime = 0;
   input.left = false;
   input.right = false;
   input.shoot = false;
   resetStatus();
+  // Restart loop if it somehow stopped
+  if (!animFrameId) animFrameId = requestAnimationFrame(loop);
 }
 
 function init() {
@@ -560,7 +564,7 @@ function init() {
   window.addEventListener('keyup', handleKeyUp);
   restartBtn.addEventListener('click', restart);
   attachButtons();
-  requestAnimationFrame(loop);
+  animFrameId = requestAnimationFrame(loop);
 }
 
 init();
