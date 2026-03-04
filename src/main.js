@@ -9,6 +9,14 @@ const statusEl = document.getElementById('status');
 const restartBtn = document.getElementById('restart');
 const ctx = board.getContext('2d');
 
+// Polyfill for ctx.roundRect (not available in older browsers)
+if (typeof ctx.roundRect !== 'function') {
+  CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h) {
+    this.rect(x, y, w, h);
+    return this;
+  };
+}
+
 const game = new SpaceInvadersGame({ width: 700, height: 520 });
 const stars = createStars(130);
 const input = { left: false, right: false, shoot: false };
@@ -30,7 +38,11 @@ function loop(timestamp) {
 
   game.setInput(input);
   const state = game.update(dt);
-  draw(state, dt);
+  try {
+    draw(state, dt);
+  } catch (err) {
+    console.error('Draw error:', err);
+  }
   updateHud(state);
 
   if (state.gameOver) setStatus('FIM DE JOGO! Aperte R ou RESTART.');
@@ -91,7 +103,7 @@ function drawBackground(dt) {
   gradient.addColorStop(0.5, '#070b1f');
   gradient.addColorStop(1, '#040609');
   ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, board.width, board.height);
+  ctx.fillRect(-20, -20, board.width + 40, board.height + 40);
 
   ctx.save();
   ctx.globalAlpha = 0.7;
@@ -452,9 +464,11 @@ function drawPowerMessage(state) {
   ctx.translate(board.width / 2, board.height / 2 - 20);
   ctx.scale(scale, scale);
 
+  ctx.font = 'bold 20px monospace';
+  const tw = ctx.measureText(state.powerMessage).width + 40;
+
   // Background
   ctx.fillStyle = 'rgba(0,0,0,0.65)';
-  const tw = ctx.measureText(state.powerMessage).width + 40;
   ctx.beginPath();
   ctx.roundRect(-tw / 2, -20, tw, 38, 8);
   ctx.fill();
@@ -462,7 +476,6 @@ function drawPowerMessage(state) {
   ctx.shadowColor = '#ffee44';
   ctx.shadowBlur = 22;
   ctx.fillStyle = '#ffee44';
-  ctx.font = 'bold 20px monospace';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(state.powerMessage, 0, 0);

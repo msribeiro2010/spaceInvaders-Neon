@@ -198,7 +198,11 @@ export class SpaceInvadersGame {
   }
 
   update(dt) {
-    if (this.gameOver) return this.state();
+    if (this.gameOver) {
+      // Keep decrementing shake so it fades out on game-over screen
+      this.shakeTimer = Math.max(0, this.shakeTimer - dt);
+      return this.state();
+    }
 
     if (!this.started) {
       if (this.input.left || this.input.right || this.input.shoot) {
@@ -404,25 +408,25 @@ export class SpaceInvadersGame {
       });
     }
 
-    // Enemy bullets vs player
-    if (this.player.invuln <= 0) {
-      enemyBullets.forEach(bullet => {
-        if (this.hit(bullet, this.player)) {
-          bullet.hit = true;
-          this.damagePlayer();
-        }
-      });
+    // Enemy bullets vs player (check invuln INSIDE each callback to prevent multi-hit in same frame)
+    enemyBullets.forEach(bullet => {
+      if (this.player.invuln > 0) return;
+      if (this.hit(bullet, this.player)) {
+        bullet.hit = true;
+        this.damagePlayer();
+      }
+    });
 
-      // Asteroids vs player
-      this.asteroids.forEach(ast => {
-        if (ast.hp <= 0) return;
-        if (this.hitCircleRect(ast, this.player)) {
-          ast.hp = 0;
-          this.spawnExplosion(ast.x, ast.y, '#ff9944', true);
-          this.damagePlayer();
-        }
-      });
-    }
+    // Asteroids vs player
+    this.asteroids.forEach(ast => {
+      if (this.player.invuln > 0) return;
+      if (ast.hp <= 0) return;
+      if (this.hitCircleRect(ast, this.player)) {
+        ast.hp = 0;
+        this.spawnExplosion(ast.x, ast.y, '#ff9944', true);
+        this.damagePlayer();
+      }
+    });
 
     // Power-up collection
     this.powerUps.forEach(pu => {
