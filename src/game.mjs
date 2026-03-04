@@ -23,13 +23,15 @@ export class SpaceInvadersGame {
     this.powerUps = [];
     this.scorePopups = [];
     this.ufo = null;
+    this.naveMae = null;
+    this.naveMaeSpawnTimer = 5.0;
     this.muzzleFlash = 0;
     this.invaderDir = 1;
     this.invaderSpeed = 40;
     this.invaderStepDown = 22;
     this.enemyFireTimer = 1.2;
     this.asteroidTimer = 4.0;
-    this.ufoTimer = 18.0;
+    this.ufoTimer = 22.0;
     this.shakeTimer = 0;
     this.shakeIntensity = 0;
     this.powerMessage = null;
@@ -54,7 +56,7 @@ export class SpaceInvadersGame {
   }
 
   createInvaders() {
-    const rows = Math.min(5 + Math.floor((this.level - 1) / 2), 6);
+    const rows = Math.min(4 + Math.floor((this.level - 1) / 2), 6);
     const cols = 11;
     const width = 28;
     const height = 20;
@@ -62,7 +64,7 @@ export class SpaceInvadersGame {
     const gapY = 14;
     const totalWidth = cols * width + (cols - 1) * gapX;
     const startX = (this.width - totalWidth) / 2;
-    const startY = 60;
+    const startY = 80; // pushed down to give space for naveMae
     const invaders = [];
     for (let row = 0; row < rows; row++) {
       const isArmored = this.level >= 3 && row === 0;
@@ -115,7 +117,7 @@ export class SpaceInvadersGame {
       y: invader.y + invader.height + 2,
       width: 4,
       height: 12,
-      vy: 260 + this.level * 18,
+      vy: 240 + this.level * 16,
       vx: 0,
       from: 'enemy',
     });
@@ -136,8 +138,8 @@ export class SpaceInvadersGame {
       });
     }
     if (big) {
-      this.shakeTimer = 0.3;
-      this.shakeIntensity = 9;
+      this.shakeTimer = 0.35;
+      this.shakeIntensity = 10;
     }
   }
 
@@ -175,13 +177,139 @@ export class SpaceInvadersGame {
     };
   }
 
+  // ── NAVE MÃE ────────────────────────────────────────────────────────────────
+
+  spawnNaveMae() {
+    const lvl = this.level;
+    const startRight = this.rng() < 0.5;
+    this.naveMae = {
+      x: this.width / 2 - 65,
+      y: -80,
+      width: 130,
+      height: 40,
+      hp: 8 + lvl * 5,
+      maxHp: 8 + lvl * 5,
+      vx: (40 + lvl * 12) * (startRight ? 1 : -1),
+      entering: true,
+      targetY: 52,
+      fireTimer: 2.0,
+      fireRate: Math.max(0.45, 2.2 - lvl * 0.22),
+    };
+  }
+
+  updateNaveMae(dt) {
+    const nm = this.naveMae;
+
+    // Slide-in animation from top
+    if (nm.entering) {
+      nm.y += 90 * dt;
+      if (nm.y >= nm.targetY) {
+        nm.y = nm.targetY;
+        nm.entering = false;
+      }
+      return;
+    }
+
+    // Horizontal bounce
+    nm.x += nm.vx * dt;
+    if (nm.x <= 10) { nm.x = 10; nm.vx = Math.abs(nm.vx); }
+    if (nm.x + nm.width >= this.width - 10) { nm.x = this.width - 10 - nm.width; nm.vx = -Math.abs(nm.vx); }
+
+    // Rage speed bonus below 33% HP
+    const rage = nm.hp / nm.maxHp < 0.33;
+    if (rage) nm.x += nm.vx * 0.5 * dt; // extra speed
+
+    // Firing
+    nm.fireTimer -= dt;
+    if (nm.fireTimer <= 0) {
+      this.fireNaveMae();
+      nm.fireTimer = rage ? nm.fireRate * 0.55 : nm.fireRate;
+    }
+  }
+
+  fireNaveMae() {
+    const nm = this.naveMae;
+    const cx = nm.x + nm.width / 2;
+    const cy = nm.y + nm.height + 2;
+    const hpRatio = nm.hp / nm.maxHp;
+    const spd = 185 + this.level * 18;
+
+    // Aim at player
+    const px = this.player.x + this.player.width / 2;
+    const py = this.player.y + this.player.height / 2;
+    const dist = Math.hypot(px - cx, py - cy) || 1;
+    const vxAim = ((px - cx) / dist) * spd;
+    const vyAim = ((py - cy) / dist) * spd;
+    const baseAngle = Math.atan2(vyAim, vxAim);
+
+    const mk = (x, vx, vy) => ({ x, y: cy, width: 6, height: 16, vx, vy, from: 'naveMae' });
+
+    if (hpRatio > 0.66) {
+      // Phase 1 — single aimed shot
+      this.bullets.push(mk(cx - 3, vxAim, vyAim));
+
+    } else if (hpRatio > 0.33) {
+      // Phase 2 — aimed + 2 diagonal side shots
+      this.bullets.push(mk(cx - 3, vxAim, vyAim));
+      this.bullets.push(mk(cx - 35, -spd * 0.4, spd * 0.9));
+      this.bullets.push(mk(cx + 35,  spd * 0.4, spd * 0.9));
+
+    } else {
+      // Phase 3 — RAGE: 5-way spread aimed at player
+      [-0.42, -0.21, 0, 0.21, 0.42].forEach(off => {
+        const a = baseAngle + off;
+        this.bullets.push(mk(cx - 3, Math.cos(a) * spd * 1.25, Math.sin(a) * spd * 1.25));
+      });
+    }
+  }
+
+  killNaveMae() {
+    const nm = this.naveMae;
+    const cx = nm.x + nm.width / 2;
+    const cy = nm.y + nm.height / 2;
+    const pts = 500 + this.level * 150;
+
+    // Chain of big explosions
+    this.spawnExplosion(cx,      cy,      '#ff79f7', true);
+    this.spawnExplosion(cx - 45, cy,      '#ffcc44', true);
+    this.spawnExplosion(cx + 45, cy,      '#ff4444', true);
+    this.spawnExplosion(cx,      cy - 15, '#44ffff', true);
+
+    this.score += pts;
+    this.spawnScorePopup(cx, cy - 30, `+${pts} NAVE MAE!`, '#ff79f7');
+
+    // Guaranteed 2 power-ups
+    this.spawnPowerUp(cx - 28, cy + 30);
+    this.spawnPowerUp(cx + 28, cy + 30);
+
+    this.naveMae = null;
+
+    // Advance to next level
+    this.level++;
+    this.invaderSpeed = 38 + this.level * 5;
+    this.invaderDir = 1;
+    this.invaders = this.createInvaders();
+    // Clear all enemy bullets, keep player bullets
+    this.bullets = this.bullets.filter(b => b.from === 'player');
+    this.asteroids = [];
+    this.enemyFireTimer = Math.max(0.4, 1.2 - this.level * 0.07);
+    this.asteroidTimer = Math.max(0.9, 4.0 - this.level * 0.25);
+    this.naveMaeSpawnTimer = 5.0;
+    this.ufoTimer = Math.max(12, 22 - this.level * 1.5);
+
+    this.powerMessage = `*** NIVEL ${this.level} — PREPARE-SE! ***`;
+    this.powerMessageTimer = 3.0;
+  }
+
+  // ────────────────────────────────────────────────────────────────────────────
+
   spawnPowerUp(x, y) {
     const type = POWER_TYPES[Math.floor(this.rng() * POWER_TYPES.length)];
     this.powerUps.push({ x: x - 11, y, width: 22, height: 22, vy: 85, type, spin: 0, alive: true });
   }
 
   spawnScorePopup(x, y, text, color) {
-    this.scorePopups.push({ x, y, text, color, life: 1.2, vy: -60 });
+    this.scorePopups.push({ x, y, text, color, life: 1.5, vy: -55 });
   }
 
   activatePower(type) {
@@ -199,7 +327,6 @@ export class SpaceInvadersGame {
 
   update(dt) {
     if (this.gameOver) {
-      // Keep decrementing shake so it fades out on game-over screen
       this.shakeTimer = Math.max(0, this.shakeTimer - dt);
       return this.state();
     }
@@ -213,10 +340,10 @@ export class SpaceInvadersGame {
     }
 
     // Timers
-    this.player.invuln = Math.max(0, this.player.invuln - dt);
-    this.player.cooldown = Math.max(0, this.player.cooldown - dt);
-    this.muzzleFlash = Math.max(0, this.muzzleFlash - dt);
-    this.shakeTimer = Math.max(0, this.shakeTimer - dt);
+    this.player.invuln    = Math.max(0, this.player.invuln - dt);
+    this.player.cooldown  = Math.max(0, this.player.cooldown - dt);
+    this.muzzleFlash      = Math.max(0, this.muzzleFlash - dt);
+    this.shakeTimer       = Math.max(0, this.shakeTimer - dt);
     this.powerMessageTimer = Math.max(0, this.powerMessageTimer - dt);
 
     if (this.player.powerTimer > 0) {
@@ -238,56 +365,59 @@ export class SpaceInvadersGame {
       this.player.cooldown = this.getCooldown();
     }
 
-    // Next level check
-    let activeInvaders = this.invaders.filter(inv => inv.alive);
-    if (!activeInvaders.length) {
-      this.level++;
-      this.invaderSpeed = 40 + this.level * 4;
-      this.invaderDir = 1;
-      this.invaders = this.createInvaders();
-      this.bullets = this.bullets.filter(b => b.from !== 'enemy');
-      this.enemyFireTimer = Math.max(0.45, 1.2 - this.level * 0.07);
-      this.asteroidTimer = Math.max(1.0, 4.0 - this.level * 0.25);
-      activeInvaders = this.invaders.filter(inv => inv.alive);
-      this.powerMessage = `*** NIVEL ${this.level} ***`;
-      this.powerMessageTimer = 2.5;
+    // NaveMae spawn countdown
+    if (!this.naveMae) {
+      this.naveMaeSpawnTimer -= dt;
+      if (this.naveMaeSpawnTimer <= 0) {
+        this.spawnNaveMae();
+        this.powerMessage = '!!! NAVE MAE DETECTADA !!!';
+        this.powerMessageTimer = 2.5;
+      }
     }
+
+    // NaveMae update
+    if (this.naveMae) this.updateNaveMae(dt);
+
+    // Invaders — no longer trigger level advance (naveMae does that now)
+    const activeInvaders = this.invaders.filter(inv => inv.alive);
 
     // Invader movement
-    const dx = this.invaderDir * this.invaderSpeed * dt;
-    let minX = Infinity, maxX = -Infinity;
-    activeInvaders.forEach(inv => {
-      inv.x += dx;
-      minX = Math.min(minX, inv.x);
-      maxX = Math.max(maxX, inv.x + inv.width);
-    });
-    if (minX <= 16 || maxX >= this.width - 16) {
-      this.invaderDir *= -1;
-      activeInvaders.forEach(inv => { inv.y += this.invaderStepDown; });
-      this.invaderSpeed += 3;
-    }
+    if (activeInvaders.length) {
+      const dx = this.invaderDir * this.invaderSpeed * dt;
+      let minX = Infinity, maxX = -Infinity;
+      activeInvaders.forEach(inv => {
+        inv.x += dx;
+        minX = Math.min(minX, inv.x);
+        maxX = Math.max(maxX, inv.x + inv.width);
+      });
+      if (minX <= 16 || maxX >= this.width - 16) {
+        this.invaderDir *= -1;
+        activeInvaders.forEach(inv => { inv.y += this.invaderStepDown; });
+        this.invaderSpeed += 3;
+      }
 
-    // Enemy fire
-    this.enemyFireTimer -= dt;
-    if (this.enemyFireTimer <= 0 && activeInvaders.length) {
-      const shooters = this.getBottomRowInvaders(activeInvaders);
-      const shooter = shooters[Math.floor(this.rng() * shooters.length)];
-      if (shooter) this.spawnEnemyBullet(shooter);
-      this.enemyFireTimer = Math.max(0.4, 1.3 - this.level * 0.08) + this.rng() * 0.4;
+      // Enemy fire
+      this.enemyFireTimer -= dt;
+      if (this.enemyFireTimer <= 0) {
+        const shooters = this.getBottomRowInvaders(activeInvaders);
+        const shooter = shooters[Math.floor(this.rng() * shooters.length)];
+        if (shooter) this.spawnEnemyBullet(shooter);
+        this.enemyFireTimer = Math.max(0.35, 1.3 - this.level * 0.08) + this.rng() * 0.4;
+      }
     }
 
     // Asteroid spawning
     this.asteroidTimer -= dt;
     if (this.asteroidTimer <= 0) {
       this.spawnAsteroid();
-      this.asteroidTimer = Math.max(1.2, 4.0 - this.level * 0.28) + this.rng() * 1.5;
+      this.asteroidTimer = Math.max(0.9, 4.0 - this.level * 0.28) + this.rng() * 1.5;
     }
 
     // UFO spawning
     this.ufoTimer -= dt;
     if (this.ufoTimer <= 0 && !this.ufo) {
       this.spawnUfo();
-      this.ufoTimer = 18 + this.rng() * 12;
+      this.ufoTimer = Math.max(12, 22 - this.level * 1.5) + this.rng() * 8;
     }
 
     // Move bullets
@@ -296,7 +426,7 @@ export class SpaceInvadersGame {
       if (b.vx) b.x += b.vx * dt;
     });
     this.bullets = this.bullets.filter(b =>
-      b.y + b.height > 0 && b.y < this.height + 10 && b.x > -60 && b.x < this.width + 60
+      b.y + b.height > 0 && b.y < this.height + 10 && b.x > -80 && b.x < this.width + 80
     );
 
     // Move asteroids
@@ -308,17 +438,11 @@ export class SpaceInvadersGame {
     this.asteroids = this.asteroids.filter(a => a.y - a.size < this.height + 60 && a.hp > 0);
 
     // Move power-ups
-    this.powerUps.forEach(p => {
-      p.y += p.vy * dt;
-      p.spin += 1.8 * dt;
-    });
+    this.powerUps.forEach(p => { p.y += p.vy * dt; p.spin += 1.8 * dt; });
     this.powerUps = this.powerUps.filter(p => p.y < this.height + 30 && p.alive);
 
     // Score popups
-    this.scorePopups.forEach(sp => {
-      sp.y += sp.vy * dt;
-      sp.life -= dt;
-    });
+    this.scorePopups.forEach(sp => { sp.y += sp.vy * dt; sp.life -= dt; });
     this.scorePopups = this.scorePopups.filter(sp => sp.life > 0);
 
     // UFO movement
@@ -345,7 +469,7 @@ export class SpaceInvadersGame {
 
   handleCollisions() {
     const playerBullets = this.bullets.filter(b => b.from === 'player');
-    const enemyBullets = this.bullets.filter(b => b.from === 'enemy');
+    const enemyBullets  = this.bullets.filter(b => b.from === 'enemy' || b.from === 'naveMae');
 
     // Player bullets vs invaders
     playerBullets.forEach(bullet => {
@@ -368,6 +492,25 @@ export class SpaceInvadersGame {
         }
       });
     });
+
+    // Player bullets vs naveMae
+    if (this.naveMae && !this.naveMae.entering) {
+      playerBullets.forEach(bullet => {
+        if (bullet.hit && !bullet.pierce) return;
+        if (this.hit(bullet, this.naveMae)) {
+          if (!bullet.pierce) bullet.hit = true;
+          this.naveMae.hp--;
+          if (this.naveMae.hp <= 0) {
+            this.killNaveMae();
+          } else {
+            // Hit spark on boss
+            const cx = this.naveMae.x + (this.rng() * this.naveMae.width);
+            const cy = this.naveMae.y + this.naveMae.height / 2;
+            this.spawnExplosion(cx, cy, '#ffcc44');
+          }
+        }
+      });
+    }
 
     // Player bullets vs asteroids
     playerBullets.forEach(bullet => {
@@ -408,7 +551,7 @@ export class SpaceInvadersGame {
       });
     }
 
-    // Enemy bullets vs player (check invuln INSIDE each callback to prevent multi-hit in same frame)
+    // Enemy & navaMae bullets vs player
     enemyBullets.forEach(bullet => {
       if (this.player.invuln > 0) return;
       if (this.hit(bullet, this.player)) {
@@ -505,8 +648,10 @@ export class SpaceInvadersGame {
       powerUps: this.powerUps.map(p => ({ ...p })),
       scorePopups: this.scorePopups.map(sp => ({ ...sp })),
       ufo: this.ufo ? { ...this.ufo } : null,
+      naveMae: this.naveMae ? { ...this.naveMae } : null,
+      naveMaeSpawnTimer: this.naveMaeSpawnTimer,
       muzzleFlash: this.muzzleFlash,
-      shake: this.shakeTimer > 0 ? this.shakeIntensity * (this.shakeTimer / 0.3) : 0,
+      shake: this.shakeTimer > 0 ? this.shakeIntensity * (this.shakeTimer / 0.35) : 0,
       powerMessage: this.powerMessageTimer > 0 ? this.powerMessage : null,
       powerMessageTimer: this.powerMessageTimer,
     };
