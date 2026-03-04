@@ -85,7 +85,6 @@ function draw(state, dt) {
   drawBackground(dt);
   drawAsteroids(state.asteroids);
   drawUfo(state.ufo);
-  drawNaveMae(state.naveMae, state.naveMaeSpawnTimer);
   drawInvaders(state.invaders);
   drawBullets(state.bullets);
   drawPowerUps(state.powerUps);
@@ -95,7 +94,8 @@ function draw(state, dt) {
   drawPowerBar(state);
   drawPowerMessage(state);
   drawAsteroidWarning(state.asteroids, state.player);
-  drawNaveMaeCountdown(state.naveMae, state.naveMaeSpawnTimer);
+  drawUfoCountdown(state.ufo, state.ufoSpawnTimer);
+  if (state.gameOver) drawGameOver(state);
 
   ctx.restore();
 }
@@ -232,33 +232,40 @@ function drawUfo(ufo) {
   ctx.save();
   const cx = ufo.x + ufo.width / 2;
   const cy = ufo.y + ufo.height / 2;
+  const hpRatio = ufo.maxHp ? ufo.hp / ufo.maxHp : 1;
+  const rage = hpRatio < 0.33;
 
-  ctx.shadowColor = '#ff79f7';
-  ctx.shadowBlur = 25;
+  // Rage flicker
+  if (rage && Math.random() > 0.55) ctx.globalAlpha = 0.7;
+
+  const glowColor = rage ? '#ff3300' : '#ff79f7';
+  ctx.shadowColor = glowColor;
+  ctx.shadowBlur = rage ? 35 : 25;
 
   // Body
-  ctx.fillStyle = '#992299';
+  ctx.fillStyle = rage ? '#882200' : '#992299';
   ctx.beginPath();
   ctx.ellipse(cx, cy + 5, ufo.width / 2, ufo.height * 0.45, 0, 0, Math.PI * 2);
   ctx.fill();
 
   // Rim glow
-  ctx.strokeStyle = '#ff79f7';
-  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = glowColor;
+  ctx.lineWidth = rage ? 2.5 : 1.5;
   ctx.beginPath();
   ctx.ellipse(cx, cy + 5, ufo.width / 2, ufo.height * 0.45, 0, 0, Math.PI * 2);
   ctx.stroke();
 
   // Dome
-  ctx.fillStyle = '#dd55dd';
+  ctx.fillStyle = rage ? '#cc2200' : '#dd55dd';
   ctx.shadowBlur = 15;
   ctx.beginPath();
   ctx.ellipse(cx, cy - 1, ufo.width / 3.5, ufo.height * 0.5, 0, Math.PI, 0);
   ctx.fill();
 
   // Lights
-  [-14, -5, 5, 14].forEach((lx, i) => {
-    const colors = ['#ff4444', '#ffff44', '#44ff88', '#4488ff'];
+  const spacing = Math.floor(ufo.width / 5);
+  [-spacing * 2, -spacing, 0, spacing, spacing * 2].forEach((lx, i) => {
+    const colors = ['#ff4444', '#ffff44', '#44ff88', '#4488ff', '#ff4444'];
     ctx.fillStyle = colors[i];
     ctx.shadowColor = colors[i];
     ctx.shadowBlur = 10;
@@ -267,12 +274,72 @@ function drawUfo(ufo) {
     ctx.fill();
   });
 
-  ctx.shadowBlur = 0;
-  ctx.fillStyle = '#ffccff';
-  ctx.font = 'bold 8px monospace';
+  // HP bar
+  if (ufo.maxHp) {
+    const barW = ufo.width + 20;
+    const bx = cx - barW / 2;
+    const by = ufo.y + ufo.height + 6;
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(bx, by, barW, 5);
+    ctx.fillStyle = glowColor;
+    ctx.fillRect(bx, by, barW * hpRatio, 5);
+  }
+
+  // Boss label
+  ctx.shadowColor = glowColor;
+  ctx.shadowBlur = 10;
+  ctx.fillStyle = glowColor;
+  ctx.font = `bold ${rage ? 10 : 8}px monospace`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText(rage ? '!!! NAVE MÃE - FÚRIA !!!' : 'NAVE MÃE', cx, ufo.y - 3);
+
+  ctx.restore();
+}
+
+function drawUfoCountdown(ufo, spawnTimer) {
+  if (ufo || spawnTimer <= 0) return;
+  const secs = Math.ceil(spawnTimer);
+  const blink = spawnTimer < 3 ? Math.sin(Date.now() * 0.02) > 0 : true;
+  if (!blink) return;
+
+  ctx.save();
+  ctx.shadowColor = '#ff79f7';
+  ctx.shadowBlur = 12;
+  ctx.fillStyle = spawnTimer < 2 ? '#ff4444' : '#ff79f7';
+  ctx.font = 'bold 10px monospace';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'top';
+  ctx.fillText(`NAVE MÃE EM: ${secs}s`, board.width - 8, 8);
+  ctx.restore();
+}
+
+function drawGameOver(state) {
+  ctx.save();
+  // Dark overlay
+  ctx.fillStyle = 'rgba(3,4,14,0.72)';
+  ctx.fillRect(0, 0, board.width, board.height);
+
+  // GAME OVER text
+  ctx.shadowColor = '#ff5555';
+  ctx.shadowBlur = 35;
+  ctx.fillStyle = '#ff5555';
+  ctx.font = 'bold 48px monospace';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('300', cx, cy + 1);
+  ctx.fillText('GAME OVER', board.width / 2, board.height / 2 - 30);
+
+  ctx.shadowColor = '#ff79f7';
+  ctx.shadowBlur = 12;
+  ctx.fillStyle = '#ff79f7';
+  ctx.font = 'bold 18px monospace';
+  ctx.fillText(`PONTUAÇÃO: ${state.score}`, board.width / 2, board.height / 2 + 14);
+
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = '#9bb0d1';
+  ctx.font = '13px monospace';
+  ctx.fillText('Aperte R ou RESTART para jogar novamente', board.width / 2, board.height / 2 + 48);
   ctx.restore();
 }
 
@@ -350,10 +417,6 @@ function drawBullets(bullets) {
         ctx.shadowBlur = 10;
         ctx.fillStyle = '#9efcff';
       }
-    } else if (bullet.from === 'naveMae') {
-      ctx.shadowColor = '#ff00cc';
-      ctx.shadowBlur = 18;
-      ctx.fillStyle = '#ff55ee';
     } else {
       ctx.shadowColor = '#ff70e0';
       ctx.shadowBlur = 10;
@@ -362,122 +425,6 @@ function drawBullets(bullets) {
     ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
     ctx.restore();
   });
-}
-
-function drawNaveMae(nm, spawnTimer) {
-  if (!nm) return;
-  ctx.save();
-
-  const cx = nm.x + nm.width / 2;
-  const cy = nm.y + nm.height / 2;
-  const hpRatio = nm.hp / nm.maxHp;
-  const rage = hpRatio < 0.33;
-
-  // Rage flicker
-  if (rage && Math.random() > 0.55) ctx.globalAlpha = 0.7;
-
-  // Color based on HP: green → yellow → red
-  const r = Math.round(hpRatio < 0.5 ? 255 : (1 - hpRatio) * 2 * 255);
-  const g = Math.round(hpRatio > 0.5 ? 255 : hpRatio * 2 * 255);
-  const bodyColor = `rgb(${r},${g},20)`;
-  const glowColor = rage ? '#ff2200' : `rgb(${r},${g},60)`;
-
-  ctx.shadowColor = glowColor;
-  ctx.shadowBlur = rage ? 35 : 22;
-
-  // Wings
-  ctx.fillStyle = bodyColor;
-  ctx.beginPath();
-  ctx.moveTo(nm.x - 28, nm.y + nm.height * 0.6);
-  ctx.lineTo(nm.x - 8,  nm.y + nm.height * 0.15);
-  ctx.lineTo(nm.x + 10, nm.y + nm.height * 0.5);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.beginPath();
-  ctx.moveTo(nm.x + nm.width + 28, nm.y + nm.height * 0.6);
-  ctx.lineTo(nm.x + nm.width + 8,  nm.y + nm.height * 0.15);
-  ctx.lineTo(nm.x + nm.width - 10, nm.y + nm.height * 0.5);
-  ctx.closePath();
-  ctx.fill();
-
-  // Main body
-  ctx.fillStyle = bodyColor;
-  ctx.beginPath();
-  ctx.roundRect(nm.x, nm.y, nm.width, nm.height, 8);
-  ctx.fill();
-
-  // Dark cockpit interior
-  ctx.fillStyle = 'rgba(0,0,0,0.7)';
-  ctx.beginPath();
-  ctx.ellipse(cx, cy - 4, 28, 11, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Cockpit glow
-  ctx.strokeStyle = glowColor;
-  ctx.lineWidth = 1.5;
-  ctx.shadowBlur = 12;
-  ctx.beginPath();
-  ctx.ellipse(cx, cy - 4, 28, 11, 0, 0, Math.PI * 2);
-  ctx.stroke();
-
-  // Engine thruster lights
-  const thrusters = [-40, -20, 0, 20, 40];
-  thrusters.forEach(ox => {
-    const col = rage ? '#ff4400' : glowColor;
-    ctx.fillStyle = col;
-    ctx.shadowColor = col;
-    ctx.shadowBlur = 14;
-    ctx.beginPath();
-    ctx.arc(cx + ox, nm.y + nm.height + 3, 4, 0, Math.PI * 2);
-    ctx.fill();
-  });
-
-  // HP bar
-  ctx.shadowBlur = 0;
-  const barW = nm.width + 16;
-  const bx = nm.x - 8;
-  const by = nm.y + nm.height + 10;
-  ctx.fillStyle = 'rgba(0,0,0,0.6)';
-  ctx.fillRect(bx, by, barW, 5);
-  ctx.fillStyle = glowColor;
-  ctx.fillRect(bx, by, barW * hpRatio, 5);
-
-  // HP text
-  ctx.fillStyle = '#fff';
-  ctx.font = 'bold 8px monospace';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  ctx.fillText(`${nm.hp}/${nm.maxHp}`, cx, by + 7);
-
-  // BOSS label above
-  ctx.shadowColor = glowColor;
-  ctx.shadowBlur = 10;
-  ctx.fillStyle = rage ? '#ff4400' : glowColor;
-  ctx.font = `bold ${rage ? 11 : 9}px monospace`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'bottom';
-  ctx.fillText(rage ? '!!! NAVE MÃE - RAIVA !!!' : 'NAVE MÃE', cx, nm.y - 4);
-
-  ctx.restore();
-}
-
-function drawNaveMaeCountdown(nm, spawnTimer) {
-  // Show countdown only while not yet spawned and game is in progress
-  if (nm || spawnTimer <= 0) return;
-  const secs = Math.ceil(spawnTimer);
-  const blink = spawnTimer < 3 ? Math.sin(Date.now() * 0.02) > 0 : true;
-  if (!blink) return;
-
-  ctx.save();
-  ctx.shadowColor = '#ff79f7';
-  ctx.shadowBlur = 14;
-  ctx.fillStyle = spawnTimer < 2 ? '#ff4444' : '#ff79f7';
-  ctx.font = 'bold 10px monospace';
-  ctx.textAlign = 'right';
-  ctx.textBaseline = 'top';
-  ctx.fillText(`NAVE MÃE EM: ${secs}s`, board.width - 8, 8);
-  ctx.restore();
 }
 
 function drawPowerUps(powerUps) {
