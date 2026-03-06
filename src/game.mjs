@@ -14,6 +14,7 @@ export class SpaceInvadersGame {
     this.score = 0;
     this.lives = 3;
     this.level = 1;
+    this.waveCount = 0;          // waves cleared within current level
     this.started = false;
     this.gameOver = false;
     this.input = { left: false, right: false, shoot: false };
@@ -34,6 +35,13 @@ export class SpaceInvadersGame {
     this.shakeIntensity = 0;
     this.powerMessage = null;
     this.powerMessageTimer = 0;
+    // Combo
+    this.combo = 0;
+    this.comboTimer = 0;
+    // Extra life milestone
+    this.nextLifeScore = 1500;
+    // Animation frame tick
+    this.animTick = 0;
     this.player = this.createPlayer();
     this.invaders = this.createInvaders();
     return this.state();
@@ -163,6 +171,21 @@ export class SpaceInvadersGame {
     });
   }
 
+  // ── COMBO ───────────────────────────────────────────────────────────────────
+
+  addComboKill(x, y, basePoints, color) {
+    this.combo++;
+    this.comboTimer = 1.5;
+    const mult = this.combo >= 9 ? 4 : this.combo >= 6 ? 3 : this.combo >= 3 ? 2 : 1;
+    const pts = basePoints * mult;
+    this.score += pts;
+    this.spawnScorePopup(x, y, `+${pts}`, color);
+    if (mult > 1) {
+      this.spawnScorePopup(x, y - 16, `×${mult} COMBO!`, '#ffee44');
+    }
+    return pts;
+  }
+
   // ── NAVE MÃE (UFO boss) ──────────────────────────────────────────────────────
 
   spawnUfo() {
@@ -186,19 +209,15 @@ export class SpaceInvadersGame {
 
   updateUfo(dt) {
     const u = this.ufo;
-    // Slide in from top
     if (u.entering) {
       u.y += 90 * dt;
       if (u.y >= u.targetY) { u.y = u.targetY; u.entering = false; }
       return;
     }
-    // Horizontal bounce
     u.x += u.vx * dt;
     if (u.x <= 6) { u.x = 6; u.vx = Math.abs(u.vx); }
     if (u.x + u.width >= this.width - 6) { u.x = this.width - 6 - u.width; u.vx = -Math.abs(u.vx); }
-    // Rage speed bonus below 33% HP
     if (u.hp / u.maxHp < 0.33) u.x += u.vx * 0.5 * dt;
-    // Fire
     u.fireTimer -= dt;
     if (u.fireTimer <= 0) {
       this.fireUfo();
@@ -218,7 +237,6 @@ export class SpaceInvadersGame {
     const vxA = ((px - cx) / dist) * spd;
     const vyA = ((py - cy) / dist) * spd;
     const hpR = u.hp / u.maxHp;
-
     const mk = (vx, vy) => ({ x: cx - 3, y: cy, width: 6, height: 14, vx, vy, from: 'enemy' });
 
     if (hpR > 0.66) {
@@ -255,8 +273,8 @@ export class SpaceInvadersGame {
 
     this.ufo = null;
 
-    // Advance level
     this.level++;
+    this.waveCount = 0;
     this.invaderSpeed = 38 + this.level * 5;
     this.invaderDir = 1;
     this.invaders = this.createInvaders();
@@ -268,6 +286,20 @@ export class SpaceInvadersGame {
 
     this.powerMessage = `*** NÍVEL ${this.level} — PREPARE-SE! ***`;
     this.powerMessageTimer = 3.0;
+  }
+
+  // ── WAVE RESPAWN ─────────────────────────────────────────────────────────────
+
+  respawnWave() {
+    this.waveCount++;
+    const bonus = 100 + this.waveCount * 50;
+    this.score += bonus;
+    this.invaderSpeed = Math.min(this.invaderSpeed + 6, 130);
+    this.invaderDir = 1;
+    this.invaders = this.createInvaders();
+    this.spawnScorePopup(this.width / 2, this.height / 2 - 40, `+${bonus} ONDA LIMPA!`, '#44ffcc');
+    this.powerMessage = `ONDA ${this.waveCount + 1} — MAIS RÁPIDO!`;
+    this.powerMessageTimer = 2.0;
   }
 
   // ────────────────────────────────────────────────────────────────────────────
@@ -296,7 +328,7 @@ export class SpaceInvadersGame {
 
   update(dt) {
     if (this.gameOver) {
-      this.shakeTimer  = Math.max(0, this.shakeTimer - dt);
+      this.shakeTimer    = Math.max(0, this.shakeTimer - dt);
       this.player.invuln = Math.max(0, this.player.invuln - dt);
       return this.state();
     }
@@ -304,18 +336,28 @@ export class SpaceInvadersGame {
     if (!this.started) {
       if (this.input.left || this.input.right || this.input.shoot) {
         this.started = true;
+        // Reset boss timer so it counts from actual game start
+        this.ufoSpawnTimer = 12.0;
       } else {
         return this.state();
       }
     }
 
     // Timers
-    this.player.invuln     = Math.max(0, this.player.invuln - dt);
-    this.player.cooldown   = Math.max(0, this.player.cooldown - dt);
-    this.muzzleFlash       = Math.max(0, this.muzzleFlash - dt);
-    this.shakeTimer        = Math.max(0, this.shakeTimer - dt);
-    this.powerMessageTimer = Math.max(0, this.powerMessageTimer - dt);
+    this.animTick          += dt;
+    this.player.invuln      = Math.max(0, this.player.invuln - dt);
+    this.player.cooldown    = Math.max(0, this.player.cooldown - dt);
+    this.muzzleFlash        = Math.max(0, this.muzzleFlash - dt);
+    this.shakeTimer         = Math.max(0, this.shakeTimer - dt);
+    this.powerMessageTimer  = Math.max(0, this.powerMessageTimer - dt);
 
+    // Combo timer
+    if (this.comboTimer > 0) {
+      this.comboTimer -= dt;
+      if (this.comboTimer <= 0) this.combo = 0;
+    }
+
+    // Power timer
     if (this.player.powerTimer > 0) {
       this.player.powerTimer -= dt;
       if (this.player.powerTimer <= 0) {
@@ -323,6 +365,15 @@ export class SpaceInvadersGame {
         this.powerMessage = '--- POWER EXPIRADO ---';
         this.powerMessageTimer = 1.5;
       }
+    }
+
+    // Extra life milestone
+    if (this.score >= this.nextLifeScore) {
+      this.lives++;
+      this.nextLifeScore += 1500;
+      this.spawnExplosion(this.player.x + this.player.width / 2, this.player.y + this.player.height / 2, '#44ffaa');
+      this.powerMessage = `+1 VIDA! (${this.lives} VIDAS)`;
+      this.powerMessageTimer = 2.5;
     }
 
     // Player movement
@@ -345,11 +396,15 @@ export class SpaceInvadersGame {
       }
     }
 
-    // UFO update
     if (this.ufo) this.updateUfo(dt);
 
     // Invaders
     const activeInvaders = this.invaders.filter(inv => inv.alive);
+
+    // Respawn wave if all invaders cleared (without killing boss or advancing level)
+    if (activeInvaders.length === 0) {
+      this.respawnWave();
+    }
 
     if (activeInvaders.length) {
       const dx = this.invaderDir * this.invaderSpeed * dt;
@@ -436,10 +491,9 @@ export class SpaceInvadersGame {
           inv.hp--;
           if (inv.hp <= 0) {
             inv.alive = false;
-            const pts = 10 + (4 - inv.row) * 5 + (inv.isArmored ? 20 : 0) + (inv.isSpecial ? 15 : 0);
-            this.score += pts;
+            const base = 10 + (4 - inv.row) * 5 + (inv.isArmored ? 20 : 0) + (inv.isSpecial ? 15 : 0);
+            this.addComboKill(inv.x + inv.width / 2, inv.y, base, '#7cfcff');
             this.spawnExplosion(inv.x + inv.width / 2, inv.y + inv.height / 2, '#7cfcff');
-            this.spawnScorePopup(inv.x + inv.width / 2, inv.y, `+${pts}`, '#7cfcff');
             if (inv.isSpecial) this.spawnPowerUp(inv.x + inv.width / 2, inv.y + inv.height / 2);
           } else {
             this.spawnExplosion(inv.x + inv.width / 2, inv.y + inv.height / 2, '#ffcc44');
@@ -475,10 +529,9 @@ export class SpaceInvadersGame {
           if (!bullet.pierce) bullet.hit = true;
           ast.hp--;
           if (ast.hp <= 0) {
-            const pts = Math.floor(ast.maxHp * 15);
-            this.score += pts;
+            const base = Math.floor(ast.maxHp * 15);
+            this.addComboKill(ast.x, ast.y, base, '#ff9944');
             this.spawnExplosion(ast.x, ast.y, '#ff9944', ast.size > 26);
-            this.spawnScorePopup(ast.x, ast.y, `+${pts}`, '#ff9944');
             if (ast.size > 26 && this.rng() < 0.45) this.spawnPowerUp(ast.x, ast.y);
           } else {
             this.spawnExplosion(ast.x, ast.y, '#ffcc44');
@@ -529,6 +582,8 @@ export class SpaceInvadersGame {
       return;
     }
     this.lives--;
+    this.combo = 0;
+    this.comboTimer = 0;
     this.spawnExplosion(this.player.x + this.player.width / 2, this.player.y, '#f472ff', true);
     this.player.invuln = 1.5;
     if (this.lives <= 0) this.gameOver = true;
@@ -574,6 +629,7 @@ export class SpaceInvadersGame {
       score: this.score,
       lives: this.lives,
       level: this.level,
+      waveCount: this.waveCount,
       started: this.started,
       gameOver: this.gameOver,
       player: { ...this.player },
@@ -589,6 +645,8 @@ export class SpaceInvadersGame {
       shake: this.shakeTimer > 0 ? this.shakeIntensity * (this.shakeTimer / 0.35) : 0,
       powerMessage: this.powerMessageTimer > 0 ? this.powerMessage : null,
       powerMessageTimer: this.powerMessageTimer,
+      combo: this.combo,
+      animFrame: Math.floor(this.animTick * 2) % 2,
     };
   }
 }

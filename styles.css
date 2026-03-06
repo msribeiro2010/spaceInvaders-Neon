@@ -49,7 +49,7 @@ body {
 
 .scoreboard {
   display: grid;
-  grid-template-columns: repeat(4, minmax(68px, 1fr));
+  grid-template-columns: repeat(5, minmax(60px, 1fr));
   gap: 12px;
   padding: 12px;
   background: linear-gradient(145deg, rgba(18, 22, 46, 0.9), rgba(8, 10, 24, 0.9));
@@ -116,8 +116,12 @@ canvas {
   box-shadow: 0 0 16px rgba(255, 121, 247, 0.25);
 }
 
-.controls button:active {
-  transform: translateY(1px) scale(0.98);
+.controls button:active,
+.controls button.pressed {
+  transform: translateY(2px) scale(0.96);
+  border-color: #63f2ff;
+  box-shadow: 0 0 22px rgba(99, 242, 255, 0.55);
+  background: linear-gradient(135deg, rgba(20, 40, 80, 0.98), rgba(10, 15, 40, 0.98));
 }
 
 .legend {
@@ -142,7 +146,7 @@ canvas {
   }
 
   .controls {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
   }
 
   .controls button {
@@ -150,7 +154,13 @@ canvas {
   }
 }
 
-@media (max-width: 520px) {
+@media (max-width: 600px) {
+  .scoreboard {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 380px) {
   .scoreboard {
     grid-template-columns: repeat(2, 1fr);
   }

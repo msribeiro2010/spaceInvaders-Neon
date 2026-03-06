@@ -11,12 +11,16 @@
     <header class="topbar">
       <div>
         <h1>Space Invaders Neon</h1>
-        <p class="sub">Defenda a base com um visual neon e tiros brilhantes.</p>
+        <p class="sub">Destrua a Nave Mãe para avançar de nível. Desvie dos asteroides!</p>
       </div>
       <div class="scoreboard">
         <div>
           <span>Score</span>
           <strong id="score">0</strong>
+        </div>
+        <div>
+          <span>Best</span>
+          <strong id="best">0</strong>
         </div>
         <div>
           <span>Lives</span>
@@ -39,12 +43,14 @@
         <button data-action="left" aria-label="Mover para a esquerda">LEFT</button>
         <button data-action="shoot" aria-label="Atirar">FIRE</button>
         <button data-action="right" aria-label="Mover para a direita">RIGHT</button>
+        <button id="pauseBtn" aria-label="Pausar">PAUSE</button>
         <button id="restart" aria-label="Reiniciar">RESTART</button>
       </div>
     </section>
 
     <section class="legend">
-      <p>Teclado: setas ou A/D para mover, ESPACO para atirar. Reinicie com R. Desvie dos asteroides! Acerte o OVNI e inimigos <span style="color:#ffee44">★</span> para ganhar poderes.</p>
+      <p>Teclado: setas ou A/D para mover, ESPAÇO para atirar. <strong>P</strong> = pausa. <strong>R</strong> = restart.</p>
+      <p>Mate a <strong>Nave Mãe</strong> para avançar de nível. Combo ×2/×3/×4 com kills rápidos. +1 vida a cada 1500 pts!</p>
       <p id="status" class="status">Pressione setas ou ESPACO para comecar.</p>
     </section>
   </main>
